@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class ClientTCP {
+public class ClientUDPold {
     public static void main(String args[]) {
         String[] tempArgs = new String[2];
         tempArgs[0] = "localhost";
