@@ -5,17 +5,13 @@ public class ServerUDP {
 
         DatagramSocket server = new DatagramSocket(4999);
 
-        receiveAndRespond(server);
-        receiveAndRespond(server);
-        receiveAndRespond(server);
-        receiveAndRespond(server);
+            receive(server);
 
-        server.close();
+//        server.close();
     }
 
-   static public void receiveAndRespond(DatagramSocket server){
-       try {
-
+   static public void receive(DatagramSocket server){
+        try {
         //odebranie
         byte[] buf = new byte[50];
         DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
@@ -27,8 +23,12 @@ public class ServerUDP {
         DatagramPacket packetSender = new DatagramPacket( received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
             server.send(packetSender);
 
+            //utworzenie watku
+            ServerUDPThread x = new ServerUDPThread(packetReceiver.getAddress(),packetReceiver.getPort(), server);
+            System.out.println("utowrzono watek dla  ->"+packetReceiver.getAddress()+" "+packetReceiver.getPort()+"<-");
         } catch (Exception e) {
            System.err.println(e);
         }
     }
+
 }
