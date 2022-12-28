@@ -15,13 +15,13 @@ public class ClientUDP {
 
             sendAndReceive(client, "prosba o pierwsze pytanie");
 
-            boolean allah = true;
-        while(allah) {
+            boolean endOfQuestions = true;
+        while(endOfQuestions) {
 
             answer = sc.nextLine();
 
             if(sendAndReceive(client, answer).equals("koniec pytan")){
-                allah = false;
+                endOfQuestions = false;
             }
         }
 
