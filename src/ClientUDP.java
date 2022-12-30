@@ -4,7 +4,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Scanner;
 
+
 public class ClientUDP {
+    static boolean endOfQuestions = false;
+    final static String alert = "EndOfQuestionsAlert";
+
     public static void main(String args[]) throws IOException {
 
             DatagramSocket client = new DatagramSocket();
@@ -13,22 +17,20 @@ public class ClientUDP {
         Scanner sc = new Scanner(System.in);
         String answer;
 
-            sendAndReceive(client, "prosba o pierwsze pytanie");
+            sendAndReceive(client, "Rozpocznij rozwiazywanie kolokwium");
 
-            boolean endOfQuestions = true;
-        while(endOfQuestions) {
 
+        while(!endOfQuestions) {
             answer = sc.nextLine();
-
-            if(sendAndReceive(client, answer).equals("koniec pytan")){
-                endOfQuestions = false;
-            }
+            sendAndReceive(client, answer);
         }
 
-            client.close();
+        System.out.println("Koniec kolokwium");
+        client.close();
 
     }
     static public String sendAndReceive(DatagramSocket client, String msg) throws IOException{
+
 
                    //wysylanie pakietu
                    InetAddress IP = InetAddress.getByName("localhost");
@@ -42,7 +44,12 @@ public class ClientUDP {
                    DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
                    client.receive(packetReceiver);
                    String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-                   System.out.println(received);
+
+                   if(received.equals(alert)){
+                       endOfQuestions = true;
+                   }else {
+                       System.out.println(received);
+                   }
 
                 return received;
     }

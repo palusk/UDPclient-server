@@ -1,8 +1,8 @@
 import java.io.*;
 import java.net.*;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.time.Instant;
 
 public class ServerUDP {
     public static void main(String[] args) throws IOException {
@@ -14,6 +14,9 @@ public class ServerUDP {
         String tempQuestion;
 
         HashMap<Integer, Integer> whichQuestion = new HashMap<Integer, Integer>();
+
+
+        HashMap<Integer, Instant> time = new HashMap<Integer, Instant>();
 
         while((tempQuestion = brQ.readLine()) != null){
             question.add(tempQuestion);
@@ -35,23 +38,33 @@ while(true) {
     FileWriter fwA = new FileWriter("bazaOdpowiedzi.txt", true);
     BufferedWriter bwA = new BufferedWriter(fwA);
 
+    Integer tempPort = packetReceiver.getPort();
+
         int temp = 0;
         if (whichQuestion.containsKey(packetReceiver.getPort())) {
             temp = whichQuestion.get(packetReceiver.getPort());
             DatagramPacket packetSender;
             if(temp < question.size()) {
                 packetSender = new DatagramPacket(question.get(temp).getBytes(), question.get(temp).length(), packetReceiver.getAddress(), packetReceiver.getPort());
+                server.send(packetSender);
+
+                //rozpoczecie licznika czasowego
+                Instant now = Instant.now();
+                time.put(tempPort, now);
             }else {
                 endOfQuestions = true;
                 bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
                 bwA.close();
-                packetSender = new DatagramPacket(calculatePoints(packetReceiver.getPort()).toString().getBytes(), calculatePoints(packetReceiver.getPort()).toString().length(), packetReceiver.getAddress(), packetReceiver.getPort());
+               String stringPoints = calculatePoints(packetReceiver.getPort()).toString();
+                packetSender = new DatagramPacket(stringPoints.getBytes(), stringPoints.length(), packetReceiver.getAddress(), packetReceiver.getPort());
+                server.send(packetSender);
+                final String alert = "EndOfQuestionsAlert";
+                packetSender = new DatagramPacket(alert.getBytes(), alert.length(), packetReceiver.getAddress(), packetReceiver.getPort());
+                server.send(packetSender);
             }
 
-            server.send(packetSender);
 
             Integer help = whichQuestion.get(packetReceiver.getPort()) + 1;
-            Integer tempPort = packetReceiver.getPort();
             whichQuestion.put(tempPort, help);
 
             if(endOfQuestions == false) {
@@ -60,14 +73,17 @@ while(true) {
             }
 
         } else {
-            Integer tempPort = packetReceiver.getPort();
             whichQuestion.put(tempPort, 1);
             DatagramPacket packetSender = new DatagramPacket(question.get(0).getBytes(), question.get(0).length(), packetReceiver.getAddress(), packetReceiver.getPort());
             server.send(packetSender);
+
+            //rozpoczecie licznika czasowego
+            Instant now = Instant.now();
+            time.put(tempPort, now);
         }
 
 }
-    //    server.close();
+      //  server.close();
 
     }
 
@@ -90,16 +106,14 @@ while(true) {
         while ((line = brA.readLine()) != null) {
             int indexOfDash = line.indexOf('-');
             tempAnswer = line.substring(indexOfDash + 2);
-            System.out.println(tempAnswer);
 
             tempPort = line.substring(0, indexOfDash - 1);
-            System.out.println(tempPort);
-            if (tempPort == clientPort.toString()) {
+            if (tempPort.equals(clientPort.toString())) {
                 answersList.add(tempAnswer);
             }
         }
 
-        while ((correctAnswer = brA.readLine()) != null) {
+        while ((correctAnswer = brCA.readLine()) != null) {
             correctAnswersList.add(correctAnswer);
         }
 
@@ -108,13 +122,14 @@ while(true) {
 
         //ten FOR jest zle !!!!
         for (String var : correctAnswersList) {
-            System.out.println(var + "-" + answersList.get(i));
             if (var.equals(answersList.get(i))) {
                 points++;
-                System.out.println("ALLAH");
             }
             i++;
         }
+
+        brA.close();
+        brCA.close();
 
     return points;
     }
