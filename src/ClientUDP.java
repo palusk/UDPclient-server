@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Random;
 import java.util.Scanner;
 
 
@@ -17,8 +18,8 @@ public class ClientUDP {
         Scanner sc = new Scanner(System.in);
         String answer;
 
-            sendAndReceive(client, "Rozpocznij rozwiazywanie kolokwium");
-
+            //authentication(client);
+        sendAndReceive(client, "Rozpocznij rozwiazywanie kolokwium");
 
         while(!endOfQuestions) {
             answer = sc.nextLine();
@@ -29,86 +30,62 @@ public class ClientUDP {
         client.close();
 
     }
+    static public void authentication(DatagramSocket client) throws IOException{
+
+        InetAddress  IP = InetAddress.getByName("localhost");
+        String message;
+        byte[] buf;
+        DatagramPacket packetSender;
+        DatagramPacket packetReceiver;
+        String received;
+
+        boolean notConnected = true;
+        while(notConnected){
+            //wyslanie potwierdzenia
+            Random random = new Random();
+            Integer confirmCode = random.nextInt(1000000);
+            message = confirmCode.toString();
+            buf = message.getBytes();
+            packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
+            client.send(packetSender);
+            System.out.println(message);
+
+            //odebranie potwierzenia
+            buf = new byte[256];
+            packetReceiver = new DatagramPacket(buf, buf.length);
+            client.receive(packetReceiver);
+            received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+            if(received.equals(confirmCode.toString())){
+                notConnected = false;
+            }
+            System.out.println(received);
+        }
+    }
+
+
     static public String sendAndReceive(DatagramSocket client, String msg) throws IOException{
 
 
-                   //wysylanie pakietu
-                   InetAddress IP = InetAddress.getByName("localhost");
-                   String message = msg;
-                   byte[] buf = message.getBytes();
-                   DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
-                   client.send(packetSender);
+        //wysylanie pakietu
+        InetAddress IP = InetAddress.getByName("localhost");
+        String message = msg;
+        byte[] buf = message.getBytes();
+        DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
+        client.send(packetSender);
 
-                   //odebranie pakietu
-                   buf = new byte[256];
-                   DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
-                   client.receive(packetReceiver);
-                   String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+        //odebranie pakietu
+        buf = new byte[256];
+        DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
+        client.receive(packetReceiver);
+        String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
 
-                   if(received.equals(alert)){
-                       endOfQuestions = true;
-                   }else {
-                       System.out.println(received);
-                   }
+        if(received.equals(alert)){
+            endOfQuestions = true;
+        }else {
+            System.out.println(received);
+        }
 
-                return received;
+        return received;
     }
-
-//    static public void sendAndReceive(DatagramSocket client, String msg){
-//          boolean success = false;
-//           while(!success) {
-//               try {
-//                   //wysylanie pakietu
-//                   InetAddress IP = InetAddress.getByName("localhost");
-//                   String message = msg;
-//                   byte[] buf = message.getBytes();
-//                   DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
-//                   client.send(packetSender);
-//
-//                   //odebranie pakietu
-//                   buf = new byte[256];
-//                   DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
-//                   client.receive(packetReceiver);
-//                   String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-//                   System.out.println(received);
-//
-//                   //weryfikacja
-//                   if (msg.equals(received)) success = true;
-//
-//               } catch (Exception e) {
-//                   System.err.println(e);
-//               }
-//           }
-//    }
-
-//    static public void receiveAndSend(DatagramSocket client, String msg){
-//        boolean success = false;
-//        while(!success) {
-//            try {
-//
-//
-//                //odebranie pakietu
-//                buf = new byte[256];
-//                DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
-//                client.receive(packetReceiver);
-//                String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-//                System.out.println(received);
-//
-//                //wysylanie pakietu
-//                InetAddress IP = InetAddress.getByName("localhost");
-//                String message = msg;
-//                byte[] buf = message.getBytes();
-//                DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
-//                client.send(packetSender);
-//
-//                //weryfikacja
-//                if (msg.equals(received)) success = true;
-//
-//            } catch (Exception e) {
-//                System.err.println(e);
-//            }
-//        }
-//    }
-
 }
 

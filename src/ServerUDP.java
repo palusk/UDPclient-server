@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.*;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.time.Instant;
@@ -15,7 +17,7 @@ public class ServerUDP {
 
         HashMap<Integer, Integer> whichQuestion = new HashMap<Integer, Integer>();
 
-
+        // hashmapa przechowująca timeStampy wysłania pytania do klienta
         HashMap<Integer, Instant> time = new HashMap<Integer, Instant>();
 
         while((tempQuestion = brQ.readLine()) != null){
@@ -23,6 +25,8 @@ public class ServerUDP {
         }
 
         DatagramSocket server = new DatagramSocket(4999);
+
+
 while(true) {
 
     boolean endOfQuestions = false;
@@ -34,54 +38,106 @@ while(true) {
         String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
         System.out.println(received);
 
+        //weryfikacja czasu odpowiedzi na pytanie
+        boolean onTime = true;
+        Integer tempPort = packetReceiver.getPort();
+
+        if(time.get(packetReceiver.getPort()) != null){
+        Instant now = time.get(packetReceiver.getPort());
+        System.out.println(now);
+        Instant later = Instant.now();
+        System.out.println(later);
+        Instant now2 = time.get(tempPort).plus(5, ChronoUnit.SECONDS);
+        var duration = Duration.between(now, later);
+        var MAX_RESPONSE_TIME = Duration.between(now, now2);
+        if(duration.compareTo(MAX_RESPONSE_TIME)>0){
+           onTime = false;
+        }}
+
+
     //zapisywanie odpowiedzi do pliku od klienta
     FileWriter fwA = new FileWriter("bazaOdpowiedzi.txt", true);
     BufferedWriter bwA = new BufferedWriter(fwA);
 
-    Integer tempPort = packetReceiver.getPort();
+
 
         int temp = 0;
+        // jeśli klient odpowiedział już na pierwsze pytanie
         if (whichQuestion.containsKey(packetReceiver.getPort())) {
             temp = whichQuestion.get(packetReceiver.getPort());
             DatagramPacket packetSender;
+            // jeśli zostały jeszcze jakieś pytania
             if(temp < question.size()) {
+
                 packetSender = new DatagramPacket(question.get(temp).getBytes(), question.get(temp).length(), packetReceiver.getAddress(), packetReceiver.getPort());
                 server.send(packetSender);
 
                 //rozpoczecie licznika czasowego
-                Instant now = Instant.now();
-                time.put(tempPort, now);
-            }else {
-                endOfQuestions = true;
-                bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
-                bwA.close();
-               String stringPoints = calculatePoints(packetReceiver.getPort()).toString();
+                Instant timeStamp = Instant.now();
+                time.put(tempPort, timeStamp);
+            }
+            // ostatnie pytanie z kolokwium
+            else {
+
+                // zapisanie odpowiedzi
+                if(!endOfQuestions){
+
+                if(onTime){
+
+                    bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
+                    bwA.close();
+                }
+                else{
+                    bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
+                    bwA.close();
+                }}else bwA.close();
+
+
+                // wyslanie i obliczenie wyniku
+               String stringPoints = "Wynik: " + (calculatePoints(packetReceiver.getPort()).toString()) + System.lineSeparator() + "Nacisnij enter aby zakonczyc";
+
+
                 packetSender = new DatagramPacket(stringPoints.getBytes(), stringPoints.length(), packetReceiver.getAddress(), packetReceiver.getPort());
                 server.send(packetSender);
+                // zakonczenie kolokwium
                 final String alert = "EndOfQuestionsAlert";
+
+
                 packetSender = new DatagramPacket(alert.getBytes(), alert.length(), packetReceiver.getAddress(), packetReceiver.getPort());
                 server.send(packetSender);
             }
 
-
+            // inkrementacja nastepnego pytania klienta
             Integer help = whichQuestion.get(packetReceiver.getPort()) + 1;
             whichQuestion.put(tempPort, help);
 
-            if(endOfQuestions == false) {
-                bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
-                bwA.close();
+            // zapisanie odpowiedzi
+            if(endOfQuestions == false)  {
+
+
+                if(onTime){
+                    bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
+                    bwA.close();
+                }
+                else{
+                    bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
+                    bwA.close();
+                }
             }
 
-        } else {
+        }
+        // jeśli klient jeszcze nie otrzymal pierwszego pytania
+        else {
+            //authentication(received,packetReceiver, server);
             whichQuestion.put(tempPort, 1);
+
             DatagramPacket packetSender = new DatagramPacket(question.get(0).getBytes(), question.get(0).length(), packetReceiver.getAddress(), packetReceiver.getPort());
             server.send(packetSender);
 
             //rozpoczecie licznika czasowego
-            Instant now = Instant.now();
-            time.put(tempPort, now);
+            Instant timeStamp = Instant.now();
+            time.put(tempPort, timeStamp);
         }
-
 }
       //  server.close();
 
@@ -120,7 +176,6 @@ while(true) {
         int i = 0;
         int points = 0;
 
-        //ten FOR jest zle !!!!
         for (String var : correctAnswersList) {
             if (var.equals(answersList.get(i))) {
                 points++;
@@ -134,31 +189,9 @@ while(true) {
     return points;
     }
 
-
-
-
-
-
-
-//   static public void receive(DatagramSocket server){
-//        try {
-//        //odebranie
-//        byte[] buf = new byte[50];
-//        DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
-//        server.receive(packetReceiver);
-//        String received = new String(packetReceiver.getData(), 0 , packetReceiver.getLength());
-//        System.out.println(received);
-//
-//        //odeslanie
-//        DatagramPacket packetSender = new DatagramPacket( received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
-//            server.send(packetSender);
-//
-//            //utworzenie watku
-//            ServerUDPThread x = new ServerUDPThread(packetReceiver.getAddress(),packetReceiver.getPort(), server);
-//            System.out.println("utowrzono watek dla  ->"+packetReceiver.getAddress()+" "+packetReceiver.getPort()+"<-");
-//        } catch (Exception e) {
-//           System.err.println(e);
-//        }
-//    }
-
+    static public void authentication(String received, DatagramPacket packetReceiver, DatagramSocket server) throws IOException {
+        DatagramPacket packetSender = new DatagramPacket(received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
+        server.send(packetSender);
+        server.receive(packetReceiver);
+    }
 }
