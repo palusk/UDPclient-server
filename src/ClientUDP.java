@@ -12,16 +12,16 @@ public class ClientUDP {
 
     public static void main(String args[]) throws IOException {
 
-            DatagramSocket client = new DatagramSocket();
+        DatagramSocket client = new DatagramSocket();
 
         //scanner
         Scanner sc = new Scanner(System.in);
         String answer;
 
-            //authentication(client);
-        sendAndReceive(client, "Rozpocznij rozwiazywanie kolokwium");
 
-        while(!endOfQuestions) {
+        authorize(client, "authorization");
+
+        while (!endOfQuestions) {
             answer = sc.nextLine();
             sendAndReceive(client, answer);
         }
@@ -30,9 +30,10 @@ public class ClientUDP {
         client.close();
 
     }
-    static public void authentication(DatagramSocket client) throws IOException{
 
-        InetAddress  IP = InetAddress.getByName("localhost");
+    static public void authentication(DatagramSocket client) throws IOException {
+
+        InetAddress IP = InetAddress.getByName("localhost");
         String message;
         byte[] buf;
         DatagramPacket packetSender;
@@ -40,7 +41,7 @@ public class ClientUDP {
         String received;
 
         boolean notConnected = true;
-        while(notConnected){
+        while (notConnected) {
             //wyslanie potwierdzenia
             Random random = new Random();
             Integer confirmCode = random.nextInt(1000000);
@@ -48,44 +49,88 @@ public class ClientUDP {
             buf = message.getBytes();
             packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
             client.send(packetSender);
-            System.out.println(message);
 
             //odebranie potwierzenia
             buf = new byte[256];
             packetReceiver = new DatagramPacket(buf, buf.length);
             client.receive(packetReceiver);
             received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-            if(received.equals(confirmCode.toString())){
+            if (received.equals(confirmCode.toString())) {
                 notConnected = false;
             }
-            System.out.println(received);
         }
     }
 
 
-    static public String sendAndReceive(DatagramSocket client, String msg) throws IOException{
+    static public String sendAndReceive(DatagramSocket client, String msg) throws IOException {
 
+        boolean notConnected = true;
+        byte[] buf;
+        String received = new String();
 
-        //wysylanie pakietu
-        InetAddress IP = InetAddress.getByName("localhost");
-        String message = msg;
-        byte[] buf = message.getBytes();
-        DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
-        client.send(packetSender);
+        while (notConnected) {
+            //wysylanie pakietu
+            InetAddress IP = InetAddress.getByName("localhost");
+            String message = msg;
+            buf = message.getBytes();
+            DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
+            client.send(packetSender);
+
+            //odebranie pakietu do weryfikacji
+            buf = new byte[256];
+            DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
+            client.receive(packetReceiver);
+            received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+
+            if (message.equals(received)) {
+                System.out.println("autoryzacja przebiegła pomyślnie");
+                notConnected = false;
+            }
+        }
 
         //odebranie pakietu
         buf = new byte[256];
         DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
         client.receive(packetReceiver);
-        String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-
-        if(received.equals(alert)){
+        received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+        if (received.substring(0,5).equals("Wynik")) {
+            System.out.println(received);
             endOfQuestions = true;
-        }else {
+        } else {
             System.out.println(received);
         }
-
         return received;
+    }
+
+
+    static public void authorize(DatagramSocket client, String msg) throws IOException {
+
+        boolean notConnected = true;
+        byte[] buf;
+        String received = new String();
+
+        while (notConnected) {
+
+            //wysylanie pakietu
+            InetAddress IP = InetAddress.getByName("localhost");
+            String message = msg;
+            buf = message.getBytes();
+            DatagramPacket packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
+            client.send(packetSender);
+
+            //odebranie pakietu do weryfikacji
+            buf = new byte[256];
+            DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
+
+            client.receive(packetReceiver);
+
+            received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+
+            if (message.equals(received)) notConnected = false;
+
+        }
+        System.out.println("autoryzacja przebiegła pomyślnie");
+        System.out.println("wciśnij ENTER aby rozpocząć kolokwium");
     }
 }
 
