@@ -84,20 +84,18 @@ while(true) {
             }
             // ostatnie pytanie z kolokwium
             else {
-
                 // zapisanie odpowiedzi
                 if (!endOfQuestions) {
-
                     if (onTime) {
 
                         bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
-                        bwA.close();
                     } else {
-                        bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
-                        bwA.close();
-                    }
-                } else bwA.close();
 
+                        bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
+                    }
+                }
+                bwA.close();
+                endOfQuestions = true;
 
                 // wyslanie i obliczenie wyniku
                 String stringPoints = "Wynik: " + (calculatePoints(packetReceiver.getPort()).toString());
@@ -112,15 +110,14 @@ while(true) {
 
             // zapisanie odpowiedzi
             if (endOfQuestions == false && whichQuestion.get(packetReceiver.getPort()) != 1) {
-
-
                 if (onTime) {
+
                     bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
-                    bwA.close();
                 } else {
+
                     bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
-                    bwA.close();
                 }
+                bwA.close();
             }
 
         }

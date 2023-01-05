@@ -31,37 +31,6 @@ public class ClientUDP {
 
     }
 
-    static public void authentication(DatagramSocket client) throws IOException {
-
-        InetAddress IP = InetAddress.getByName("localhost");
-        String message;
-        byte[] buf;
-        DatagramPacket packetSender;
-        DatagramPacket packetReceiver;
-        String received;
-
-        boolean notConnected = true;
-        while (notConnected) {
-            //wyslanie potwierdzenia
-            Random random = new Random();
-            Integer confirmCode = random.nextInt(1000000);
-            message = confirmCode.toString();
-            buf = message.getBytes();
-            packetSender = new DatagramPacket(buf, buf.length, IP, 4999);
-            client.send(packetSender);
-
-            //odebranie potwierzenia
-            buf = new byte[256];
-            packetReceiver = new DatagramPacket(buf, buf.length);
-            client.receive(packetReceiver);
-            received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-            if (received.equals(confirmCode.toString())) {
-                notConnected = false;
-            }
-        }
-    }
-
-
     static public String sendAndReceive(DatagramSocket client, String msg) throws IOException {
 
         boolean notConnected = true;
