@@ -31,20 +31,20 @@ while(true) {
 
     boolean endOfQuestions = false;
 
-        //odebranie
-        byte[] buf = new byte[250];
-        DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
-        server.receive(packetReceiver);
+    //odebranie
+    byte[] buf = new byte[300];
+    DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
+    server.receive(packetReceiver);
 
-        String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-        System.out.println(received);
+    String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+    System.out.println(received);
 
-        DatagramPacket packetSender = new DatagramPacket(received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
-        server.send(packetSender);
+    DatagramPacket packetSender = new DatagramPacket(received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
+    server.send(packetSender);
 
-        if(!(whichQuestion.containsKey(packetReceiver.getPort())))
-            whichQuestion.put(packetReceiver.getPort(),0);
-        else{
+    if (!(whichQuestion.containsKey(packetReceiver.getPort())))
+        whichQuestion.put(packetReceiver.getPort(), 0);
+    else {
         //weryfikacja czasu odpowiedzi na pytanie
         boolean onTime = true;
         Integer tempPort = packetReceiver.getPort();
@@ -66,6 +66,10 @@ while(true) {
         //zapisywanie odpowiedzi do pliku od klienta
         FileWriter fwA = new FileWriter("bazaOdpowiedzi.txt", true);
         BufferedWriter bwA = new BufferedWriter(fwA);
+
+        //zapisywanie wyników
+        FileWriter fwR = new FileWriter("wyniki.txt", true);
+        BufferedWriter bwR = new BufferedWriter(fwR);
 
 
         int temp = 0;
@@ -99,9 +103,11 @@ while(true) {
 
                 // wyslanie i obliczenie wyniku
                 String stringPoints = "Wynik: " + (calculatePoints(packetReceiver.getPort()).toString());
-
+                bwR.append(packetReceiver.getPort() + " " + stringPoints + System.lineSeparator());
+                bwR.close();
                 packetSender = new DatagramPacket(stringPoints.getBytes(), stringPoints.length(), packetReceiver.getAddress(), packetReceiver.getPort());
                 server.send(packetSender);
+
             }
 
             // inkrementacja nastepnego pytania klienta
@@ -135,21 +141,17 @@ while(true) {
         }
     }
 }
-      //  server.close();
-
     }
 
 
     static public Integer calculatePoints(Integer clientPort) throws IOException {
         ArrayList<String> answersList = new ArrayList<String>();
         ArrayList<String> correctAnswersList = new ArrayList<String>();
-
         FileReader frA = new FileReader("bazaOdpowiedzi.txt");
         BufferedReader brA = new BufferedReader(frA);
         String line = new String();
         String tempAnswer = new String();
         String tempPort = new String();
-
 
         FileReader frCA = new FileReader("poprawneOdpowiedzi.txt");
         BufferedReader brCA = new BufferedReader(frCA);
@@ -158,17 +160,14 @@ while(true) {
         while ((line = brA.readLine()) != null) {
             int indexOfDash = line.indexOf('-');
             tempAnswer = line.substring(indexOfDash + 2);
-
             tempPort = line.substring(0, indexOfDash - 1);
             if (tempPort.equals(clientPort.toString())) {
                 answersList.add(tempAnswer);
             }
         }
-
         while ((correctAnswer = brCA.readLine()) != null) {
             correctAnswersList.add(correctAnswer);
         }
-
         int i = 0;
         int points = 0;
 
@@ -178,10 +177,8 @@ while(true) {
             }
             i++;
         }
-
         brA.close();
         brCA.close();
-
     return points;
     }
 }

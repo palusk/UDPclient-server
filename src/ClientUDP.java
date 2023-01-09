@@ -5,7 +5,6 @@ import java.net.InetAddress;
 import java.util.Random;
 import java.util.Scanner;
 
-
 public class ClientUDP {
     static boolean endOfQuestions = false;
     final static String alert = "EndOfQuestionsAlert";
@@ -13,11 +12,8 @@ public class ClientUDP {
     public static void main(String args[]) throws IOException {
 
         DatagramSocket client = new DatagramSocket();
-
-        //scanner
         Scanner sc = new Scanner(System.in);
         String answer;
-
 
         authorize(client, "authorization");
 
@@ -28,11 +24,9 @@ public class ClientUDP {
 
         System.out.println("Koniec kolokwium");
         client.close();
-
     }
 
     static public String sendAndReceive(DatagramSocket client, String msg) throws IOException {
-
         boolean notConnected = true;
         byte[] buf;
         String received = new String();
@@ -46,7 +40,7 @@ public class ClientUDP {
             client.send(packetSender);
 
             //odebranie pakietu do weryfikacji
-            buf = new byte[256];
+            buf = new byte[300];
             DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
             client.receive(packetReceiver);
             received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
@@ -58,7 +52,7 @@ public class ClientUDP {
         }
 
         //odebranie pakietu
-        buf = new byte[256];
+        buf = new byte[300];
         DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
         client.receive(packetReceiver);
         received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
@@ -70,7 +64,6 @@ public class ClientUDP {
         }
         return received;
     }
-
 
     static public void authorize(DatagramSocket client, String msg) throws IOException {
 
@@ -88,7 +81,7 @@ public class ClientUDP {
             client.send(packetSender);
 
             //odebranie pakietu do weryfikacji
-            buf = new byte[256];
+            buf = new byte[300];
             DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
 
             client.receive(packetReceiver);
