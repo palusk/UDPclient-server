@@ -25,122 +25,121 @@ public class ServerUDP {
         }
 
         DatagramSocket server = new DatagramSocket(4999);
+        boolean quit = false;
 
+        while(!quit) {
 
-while(true) {
+            boolean endOfQuestions = false;
 
-    boolean endOfQuestions = false;
+            //odebranie
+            byte[] buf = new byte[300];
+            DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
+            server.receive(packetReceiver);
 
-    //odebranie
-    byte[] buf = new byte[300];
-    DatagramPacket packetReceiver = new DatagramPacket(buf, buf.length);
-    server.receive(packetReceiver);
+            String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
+            System.out.println(received);
 
-    String received = new String(packetReceiver.getData(), 0, packetReceiver.getLength());
-    System.out.println(received);
-
-    DatagramPacket packetSender = new DatagramPacket(received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
-    server.send(packetSender);
-
-    if (!(whichQuestion.containsKey(packetReceiver.getPort())))
-        whichQuestion.put(packetReceiver.getPort(), 0);
-    else {
-        //weryfikacja czasu odpowiedzi na pytanie
-        boolean onTime = true;
-        Integer tempPort = packetReceiver.getPort();
-
-        if (time.get(packetReceiver.getPort()) != null) {
-            Instant now = time.get(packetReceiver.getPort());
-            System.out.println(now);
-            Instant later = Instant.now();
-            System.out.println(later);
-            Instant now2 = time.get(tempPort).plus(5, ChronoUnit.SECONDS);
-            var duration = Duration.between(now, later);
-            var MAX_RESPONSE_TIME = Duration.between(now, now2);
-            if (duration.compareTo(MAX_RESPONSE_TIME) > 0) {
-                onTime = false;
-            }
-        }
-
-
-        //zapisywanie odpowiedzi do pliku od klienta
-        FileWriter fwA = new FileWriter("bazaOdpowiedzi.txt", true);
-        BufferedWriter bwA = new BufferedWriter(fwA);
-
-        //zapisywanie wyników
-        FileWriter fwR = new FileWriter("wyniki.txt", true);
-        BufferedWriter bwR = new BufferedWriter(fwR);
-
-
-        int temp = 0;
-        // jeśli klient odpowiedział już na pierwsze pytanie
-        if (whichQuestion.containsKey(packetReceiver.getPort())) {
-            temp = whichQuestion.get(packetReceiver.getPort());
-            // jeśli zostały jeszcze jakieś pytania
-            if (temp < question.size()) {
-
-                packetSender = new DatagramPacket(question.get(temp).getBytes(), question.get(temp).length(), packetReceiver.getAddress(), packetReceiver.getPort());
-                server.send(packetSender);
-
-                //rozpoczecie licznika czasowego
-                Instant timeStamp = Instant.now();
-                time.put(tempPort, timeStamp);
-            }
-            // ostatnie pytanie z kolokwium
-            else {
-                // zapisanie odpowiedzi
-                if (!endOfQuestions) {
-                    if (onTime) {
-
-                        bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
-                    } else {
-
-                        bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
-                    }
-                }
-                bwA.close();
-                endOfQuestions = true;
-
-                // wyslanie i obliczenie wyniku
-                String stringPoints = "Wynik: " + (calculatePoints(packetReceiver.getPort()).toString());
-                bwR.append(packetReceiver.getPort() + " " + stringPoints + System.lineSeparator());
-                bwR.close();
-                packetSender = new DatagramPacket(stringPoints.getBytes(), stringPoints.length(), packetReceiver.getAddress(), packetReceiver.getPort());
-                server.send(packetSender);
-
-            }
-
-            // inkrementacja nastepnego pytania klienta
-            Integer help = whichQuestion.get(packetReceiver.getPort()) + 1;
-            whichQuestion.put(tempPort, help);
-
-            // zapisanie odpowiedzi
-            if (endOfQuestions == false && whichQuestion.get(packetReceiver.getPort()) != 1) {
-                if (onTime) {
-
-                    bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
-                } else {
-
-                    bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
-                }
-                bwA.close();
-            }
-
-        }
-        // jeśli klient jeszcze nie otrzymal pierwszego pytania
-        else {
-
-            whichQuestion.put(tempPort, 1);
-
-            packetSender = new DatagramPacket(question.get(0).getBytes(), question.get(0).length(), packetReceiver.getAddress(), packetReceiver.getPort());
+            DatagramPacket packetSender = new DatagramPacket(received.getBytes(), received.length(), packetReceiver.getAddress(), packetReceiver.getPort());
             server.send(packetSender);
 
-            //rozpoczecie licznika czasowego
-            Instant timeStamp = Instant.now();
-            time.put(tempPort, timeStamp);
+            if (!(whichQuestion.containsKey(packetReceiver.getPort())))
+                whichQuestion.put(packetReceiver.getPort(), 0);
+            else {
+                //weryfikacja czasu odpowiedzi na pytanie
+                boolean onTime = true;
+                Integer tempPort = packetReceiver.getPort();
+
+                if (time.get(packetReceiver.getPort()) != null) {
+                    Instant now = time.get(packetReceiver.getPort());
+                    System.out.println(now);
+                    Instant later = Instant.now();
+                    System.out.println(later);
+                    Instant now2 = time.get(tempPort).plus(5, ChronoUnit.SECONDS);
+                    var duration = Duration.between(now, later);
+                    var MAX_RESPONSE_TIME = Duration.between(now, now2);
+                    if (duration.compareTo(MAX_RESPONSE_TIME) > 0) {
+                        onTime = false;
+                    }
+                }
+
+                //zapisywanie odpowiedzi do pliku od klienta
+                FileWriter fwA = new FileWriter("bazaOdpowiedzi.txt", true);
+                BufferedWriter bwA = new BufferedWriter(fwA);
+
+                //zapisywanie wyników
+                FileWriter fwR = new FileWriter("wyniki.txt", true);
+                BufferedWriter bwR = new BufferedWriter(fwR);
+
+                int temp = 0;
+                // jeśli klient odpowiedział już na pierwsze pytanie
+                if (whichQuestion.containsKey(packetReceiver.getPort())) {
+                    temp = whichQuestion.get(packetReceiver.getPort());
+                    // jeśli zostały jeszcze jakieś pytania
+                    if (temp < question.size()) {
+
+                        packetSender = new DatagramPacket(question.get(temp).getBytes(), question.get(temp).length(), packetReceiver.getAddress(), packetReceiver.getPort());
+                        server.send(packetSender);
+
+                        //rozpoczecie licznika czasowego
+                        Instant timeStamp = Instant.now();
+                        time.put(tempPort, timeStamp);
+                    }
+                    // ostatnie pytanie z kolokwium
+                    else {
+                        // zapisanie odpowiedzi
+                        if (!endOfQuestions) {
+                            if (onTime) {
+
+                                bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
+                            } else {
+
+                                bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
+                            }
+                        }
+                        bwA.close();
+                        endOfQuestions = true;
+
+                        // wyslanie i obliczenie wyniku
+                        String stringPoints = "Wynik: " + (calculatePoints(packetReceiver.getPort()).toString());
+                        bwR.append(packetReceiver.getPort() + " " + stringPoints + System.lineSeparator());
+                        bwR.close();
+                        packetSender = new DatagramPacket(stringPoints.getBytes(), stringPoints.length(), packetReceiver.getAddress(), packetReceiver.getPort());
+                        server.send(packetSender);
+
+                    }
+
+                    // inkrementacja nastepnego pytania klienta
+                    Integer help = whichQuestion.get(packetReceiver.getPort()) + 1;
+                    whichQuestion.put(tempPort, help);
+
+                    // zapisanie odpowiedzi
+                    if (endOfQuestions == false && whichQuestion.get(packetReceiver.getPort()) != 1) {
+                        if (onTime) {
+
+                            bwA.append(packetReceiver.getPort() + " - " + received + System.lineSeparator());
+                        } else {
+
+                            bwA.append(packetReceiver.getPort() + " - brak odpowiedzi" + System.lineSeparator());
+                        }
+                        bwA.close();
+                    }
+
+                }
+                // jeśli klient jeszcze nie otrzymal pierwszego pytania
+                else {
+
+                    whichQuestion.put(tempPort, 1);
+
+                    packetSender = new DatagramPacket(question.get(0).getBytes(), question.get(0).length(), packetReceiver.getAddress(), packetReceiver.getPort());
+                    server.send(packetSender);
+
+                    //rozpoczecie licznika czasowego
+                    Instant timeStamp = Instant.now();
+                    time.put(tempPort, timeStamp);
+                }
+            }
         }
-    }
-}
+server.close();
     }
 
 
